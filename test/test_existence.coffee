@@ -43,9 +43,9 @@ ok obj.prop?.length is 5
 
 ok obj?['prop']?['length'] is 5
 
-ok obj?.prop?.non?.existent?.property is undefined
+ok obj?.prop?.non?.existent?.property is null
 
-ok obj?['non']?['existent'].property is undefined
+ok obj?['non']?['existent'].property is null
 
 
 # Soaks and caches method calls as well.
@@ -53,16 +53,16 @@ arr = ["--", "----"]
 
 ok arr.pop()?.length is 4
 ok arr.pop()?.length is 2
-ok arr.pop()?.length is undefined
-ok arr[0]?.length is undefined
-ok arr.pop()?.length?.non?.existent()?.property is undefined
+ok arr.pop()?.length is null
+ok arr[0]?.length is null
+ok arr.pop()?.length?.non?.existent()?.property is null
 
 
 # Soaks method calls safely.
 value = undefined
 result = value?.toString().toLowerCase()
 
-ok result is undefined
+ok result is null
 
 value = 10
 result = value?.toString().toLowerCase()
@@ -87,7 +87,7 @@ ok result
 
 # Safely calls values off of non-existent variables.
 result = nothing?.value
-ok result is undefined
+ok result is null
 
 
 # Assign to the result of an exsitential operation with a minus.

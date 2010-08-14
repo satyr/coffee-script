@@ -288,7 +288,7 @@ exports.ReturnNode = class ReturnNode extends BaseNode
 # or vanilla.
 exports.ValueNode = class ValueNode extends BaseNode
 
-  SOAK:     " == undefined ? undefined : "
+  SOAK:     " == null ? null : "
 
   class:     'ValueNode'
   children: ['base', 'properties']
@@ -331,13 +331,6 @@ exports.ValueNode = class ValueNode extends BaseNode
   isNumber: ->
     @base instanceof LiteralNode and @base.value.match NUMBER
 
-  # Works out if the value is the start of a chain.
-  isStart: (o) ->
-    return true if this is o.chainRoot and @properties[0] instanceof AccessorNode
-    node = o.chainRoot.base or o.chainRoot.variable
-    while node instanceof CallNode then node = node.variable
-    node is this
-
   # If the value node has indexes containing function calls, and the value node
   # needs to be used twice, in compound assignment ... then we need to cache
   # the value of the indexes.
@@ -367,16 +360,17 @@ exports.ValueNode = class ValueNode extends BaseNode
     baseline    = "(#{baseline})" if @hasProperties() and (@base instanceof ObjectNode or @isNumber())
     complete    = @last = baseline
 
+    op = merge o, {prop: true} if props.length
     for prop, i in props
       @source = baseline
       if prop.soakNode
         if @base instanceof CallNode or @base.contains((n) -> n instanceof CallNode) and i is 0
           temp = o.scope.freeVariable()
           complete = "(#{ baseline = temp } = (#{complete}))"
-        complete = "typeof #{complete} === \"undefined\" || #{baseline}" if i is 0 and @isStart(o)
-        complete += @SOAK + (baseline += prop.compile(o))
+        complete = "typeof #{complete} == \"undefined\" || #{baseline}" if i is 0 and not o.prop
+        complete += @SOAK + (baseline += prop.compile(op))
       else
-        part = prop.compile(o)
+        part = prop.compile(op)
         baseline += part
         complete += part
         @last = part
@@ -1223,7 +1217,7 @@ exports.ExistenceNode = class ExistenceNode extends BaseNode
   # Be careful not to double-evaluate anything.
   @compileTest: (o, variable) ->
     [first, second] = variable.compileReference o
-    "(typeof #{first.compile(o)} !== \"undefined\" && #{second.compile(o)} !== null)"
+    "(typeof #{first.compile(o)} != \"undefined\" && #{second.compile(o)} !== null)"
 
 #### ParentheticalNode
 
