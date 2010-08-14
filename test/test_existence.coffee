@@ -69,6 +69,9 @@ result = value?.toString().toLowerCase()
 
 ok result is '10'
 
+# Soaks without over-indexing.
+ok value[(-> ++value)()]?.valueOf() is null
+ok value is 11
 
 # Soaks constructor invocations.
 a = 0

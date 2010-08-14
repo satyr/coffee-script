@@ -363,11 +363,10 @@ exports.ValueNode = class ValueNode extends BaseNode
     for prop, i in props
       @source = baseline
       if prop.soakNode
-        if @base instanceof CallNode or @base.contains((n) -> n instanceof CallNode) and i is 0
+        if i > 0 or @base.containsType CallNode
           temp = o.scope.freeVariable()
           complete = "(#{ baseline = temp } = (#{complete}))"
-        if i is 0 and not (o instanceof AccessorNode)
-          complete = "typeof #{complete} == \"undefined\" || #{baseline}"
+        complete = "typeof #{complete} == \"undefined\" || #{baseline}" if i is 0
         complete += @SOAK + (baseline += prop.compile(o))
       else
         part = prop.compile(o)
