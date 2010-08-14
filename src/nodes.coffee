@@ -360,17 +360,17 @@ exports.ValueNode = class ValueNode extends BaseNode
     baseline    = "(#{baseline})" if @hasProperties() and (@base instanceof ObjectNode or @isNumber())
     complete    = @last = baseline
 
-    op = merge o, {prop: true} if props.length
     for prop, i in props
       @source = baseline
       if prop.soakNode
         if @base instanceof CallNode or @base.contains((n) -> n instanceof CallNode) and i is 0
           temp = o.scope.freeVariable()
           complete = "(#{ baseline = temp } = (#{complete}))"
-        complete = "typeof #{complete} == \"undefined\" || #{baseline}" if i is 0 and not o.prop
-        complete += @SOAK + (baseline += prop.compile(op))
+        if i is 0 and not (o instanceof AccessorNode)
+          complete = "typeof #{complete} == \"undefined\" || #{baseline}"
+        complete += @SOAK + (baseline += prop.compile(o))
       else
-        part = prop.compile(op)
+        part = prop.compile(o)
         baseline += part
         complete += part
         @last = part
