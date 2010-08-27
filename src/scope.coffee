@@ -5,9 +5,6 @@
 # variables are new and need to be declared with `var`, and which are shared
 # with the outside.
 
-# Set up exported variables for both **Node.js** and the browser.
-this.exports = this unless process?
-
 exports.Scope = class Scope
 
   # The top-level **Scope** object.

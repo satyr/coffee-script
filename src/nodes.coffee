@@ -3,15 +3,9 @@
 # but some are created by other nodes as a method of code generation. To convert
 # the syntax tree into a string of JavaScript code, call `compile()` on the root.
 
-# Set up for both **Node.js** and the browser, by
-# including the [Scope](scope.html) class and the [helper](helpers.html) functions.
-if process?
-  Scope =   require('./scope').Scope
-  helpers = require('./helpers').helpers
-else
-  this.exports = this
-  helpers =      this.helpers
-  Scope =        this.Scope
+# Set up [Scope](scope.html) class and the [helper](helpers.html) functions.
+{Scope}   = require './scope'
+{helpers} = require './helpers'
 
 # Import the helpers we plan to use.
 {compact, flatten, merge, del, include, indexOf, starts, ends} = helpers

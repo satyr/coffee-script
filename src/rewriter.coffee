@@ -5,12 +5,7 @@
 # shorthand into the unambiguous long form, add implicit indentation and
 # parentheses, balance incorrect nestings, and generally clean things up.
 
-# Set up exported variables for both Node.js and the browser.
-if process?
-  {helpers} = require('./helpers')
-else
-  this.exports = this
-  helpers      = this.helpers
+{helpers} = require './helpers'
 
 # Import the helpers we need.
 {include} = helpers
