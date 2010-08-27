@@ -12,7 +12,6 @@ if process?
   Lexer   = require('./lexer').Lexer
   parser  = require('./parser').parser
   helpers = require('./helpers').helpers
-  helpers.extend global, require './nodes'
   if require.registerExtension
     require.registerExtension '.coffee', (content) -> compile content
 else
@@ -69,6 +68,8 @@ parser.lexer =
     @tokens = tokens
     @pos    = 0
   upcomingInput: -> ""
+
+parser.yy = require './nodes'
 
 # Activate CoffeeScript in the browser by having it compile and evaluate
 # all script tags with a content-type of `text/coffeescript`.
