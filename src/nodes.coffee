@@ -1065,12 +1065,13 @@ exports.WhileNode = class WhileNode extends BaseNode
     o.top    =  true
     @condition.parenthetical = yes
     cond     =  @condition.compile(o)
+    cond     =  if cond is 'true' then 'for (;;)' else "while (#{cond})"
     set      =  ''
     unless top
       rvar  = o.scope.freeVariable()
       set   = "#{@tab}#{rvar} = [];\n"
       @body = PushNode.wrap(rvar, @body) if @body
-    pre     = "#{set}#{@tab}while (#{cond})"
+    pre     = set + @tab + cond
     @body   = Expressions.wrap([new IfNode(@guard, @body)]) if @guard
     if @returns
       post = '\n' + new ReturnNode(literal(rvar)).compile(merge(o, indent: @idt()))
