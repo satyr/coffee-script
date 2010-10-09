@@ -47,7 +47,7 @@ exports.Lexer = class Lexer
     # At every position, run through this list of attempted matches,
     # short-circuiting if any of them succeed. Their order determines precedence:
     # `@literalToken` is the fallback catch-all.
-    while (@chunk = code[@i..])
+    while @chunk = code.slice @i
       @identifierToken() or
       @commentToken()    or
       @whitespaceToken() or
@@ -423,7 +423,7 @@ exports.Lexer = class Lexer
       i += 1
     if levels.length
       throw new Error "SyntaxError: Unterminated #{levels.pop()[0]} starting on line #{@line + 1}"
-    if not i then false else str[0...i]
+    if not i then false else str.slice 0, i
 
   # Expand variables and expressions inside double-quoted strings using
   # Ruby-like notation for substitution of arbitrary expressions.
@@ -443,9 +443,9 @@ exports.Lexer = class Lexer
         i += 1
         continue
       unless letter is '#' and str.charAt(i+1) is '{' and
-             (expr = @balancedString str[i+1..], [['{', '}']])
+             (expr = @balancedString str.slice(i+1), [['{', '}']])
         continue
-      tokens.push ['TO_BE_STRING', str[pi...i]] if pi < i
+      tokens.push ['TO_BE_STRING', str.slice(pi, i)] if pi < i
       inner = expr.slice(1, -1).replace(LEADING_SPACES, '').replace(TRAILING_SPACES, '')
       if inner.length
         nested = new Lexer().tokenize inner, line: @line, rewrite: off
@@ -456,7 +456,7 @@ exports.Lexer = class Lexer
         tokens.push ['TOKENS', nested]
       i += expr.length
       pi = i + 1
-    tokens.push ['TO_BE_STRING', str[pi..]] if i > pi < str.length
+    tokens.push ['TO_BE_STRING', str.slice pi] if i > pi < str.length
     return tokens if regex
     return @token 'STRING', '""' unless tokens.length
     @token '(', '(' if interpolated = tokens.length > 1
