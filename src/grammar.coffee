@@ -233,7 +233,6 @@ grammar =
     o "Assignable"
     o "Literal",                                -> new Value $1
     o "Parenthetical",                          -> new Value $1
-    o "Range",                                  -> new Value $1
     o "This"
   ]
 
@@ -245,7 +244,6 @@ grammar =
     o "::",                                     -> new Accessor(new Literal('prototype'))
     o "SOAK_ACCESS Identifier",                 -> new Accessor $2, 'soak'
     o "Index"
-    o "Slice",                                  -> new Slice $1
   ]
 
   # Indexing into an object or array using bracket notation.
@@ -330,32 +328,22 @@ grammar =
     o "@",                                      -> new Value new Literal 'this'
   ]
 
-  RangeDots: [
-    o ". .",                                    -> 'inclusive'
-    o ". . .",                                  -> 'exclusive'
-  ]
-
   # A reference to a property on *this*.
   ThisProperty: [
     o "@ Identifier",                           -> new Value new Literal('this'), [new Accessor($2)], 'this'
   ]
 
-  # The CoffeeScript range literal.
+  # The CoffeeScript range.
   Range: [
-    o "[ Expression RangeDots Expression ]",    -> new Range $2, $4, $3
-  ]
-
-  # The slice literal.
-  Slice: [
-    o "INDEX_START Expression RangeDots Expression INDEX_END", -> new Range $2, $4, $3
-    o "INDEX_START Expression RangeDots INDEX_END", -> new Range $2, null, $3
-    o "INDEX_START RangeDots Expression INDEX_END", -> new Range null, $3, $2
+    o "Expression TO Expression",               -> new Range $1, $3, new Literal 1
+    o "Expression TO Expression BY Expression", -> new Range $1, $3, $5
   ]
 
   # The array literal.
   Array: [
     o "[ ]",                                    -> new ArrayLiteral []
     o "[ ArgList OptComma ]",                   -> new ArrayLiteral $2
+    o "[ Range ]",                              -> $2
   ]
 
   # The **ArgList** is both the list of objects passed into a function call,
@@ -443,7 +431,6 @@ grammar =
   ]
 
   ForBody: [
-    o "FOR Range",                              -> source: new Value($2), vars: []
     o "ForStart ForSource",                     -> $2.raw = $1.raw; $2.vars = $1; $2
   ]
 
@@ -476,9 +463,9 @@ grammar =
     o "FOROF Expression",                               -> source: $2, object: true
     o "FORIN Expression WHEN Expression",               -> source: $2, guard: $4
     o "FOROF Expression WHEN Expression",               -> source: $2, guard: $4, object: true
-    o "FORIN Expression BY Expression",                 -> source: $2, step:  $4
-    o "FORIN Expression WHEN Expression BY Expression", -> source: $2, guard: $4, step:   $6
-    o "FORIN Expression BY Expression WHEN Expression", -> source: $2, step:  $4, guard: $6
+    o "FORIN Range",                                    -> source: $2
+    o "FORIN Range WHEN Expression",                    -> source: $2, guard: $4
+    o "FORIN Expression BY Expression WHEN Expression", -> source: $2, guard: $6, step: $4
   ]
 
   Switch: [
@@ -584,7 +571,7 @@ operators = [
   ["right",     'COMPOUND_ASSIGN']
   ["left",      '.']
   ["nonassoc",  'INDENT', 'OUTDENT']
-  ["right",     'WHEN', 'LEADING_WHEN', 'FORIN', 'FOROF', 'BY', 'THROW']
+  ["right",     'WHEN', 'LEADING_WHEN', 'FORIN', 'FOROF', 'TO', 'BY', 'THROW']
   ["right",     'IF', 'UNLESS', 'ELSE', 'FOR', 'WHILE', 'UNTIL', 'LOOP', 'SUPER', 'CLASS', 'EXTENDS']
   ["right",     '=', ':', 'RETURN']
   ["right",     '->', '=>', 'UNLESS', 'POST_IF', 'POST_UNLESS']

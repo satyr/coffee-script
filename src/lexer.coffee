@@ -505,19 +505,15 @@ exports.Lexer = class Lexer
 
 # Keywords that CoffeeScript shares in common with JavaScript.
 JS_KEYWORDS = [
-  'if', 'else'
-  'true', 'false'
-  'new', 'return'
-  'try', 'catch', 'finally', 'throw'
-  'break', 'continue'
-  'for', 'in', 'while'
-  'delete', 'instanceof', 'typeof'
-  'switch', 'super', 'extends', 'class'
-  'this', 'null', 'debugger'
+  'true', 'false', 'null', 'this'
+  'if', 'else', 'switch', 'for', 'while', 'try', 'catch', 'finally'
+  'return', 'throw', 'break', 'continue'
+  'new', 'delete', 'typeof', 'in', 'instanceof'
+  'debugger', 'super', 'class', 'extends'
 ]
 
 # CoffeeScript-only keywords.
-COFFEE_KEYWORDS = ['then', 'unless', 'until', 'loop', 'of', 'by', 'when']
+COFFEE_KEYWORDS = ['then', 'unless', 'until', 'loop', 'of', 'to', 'by', 'when']
 COFFEE_KEYWORDS.push op for all op of COFFEE_ALIASES =
   and  : '&&'
   or   : '||'

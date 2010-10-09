@@ -65,7 +65,7 @@ ok Math.FastAdd(20, 20) is 40
 # Parens are optional on simple function calls.
 ok 100 > 1 if 1 > 0
 ok true unless false
-ok true for i in [1..3]
+ok true for i in [1 to 3]
 
 okFunc = (f) -> ok(f())
 okFunc -> true
@@ -122,7 +122,7 @@ mult = (x, mids..., y) ->
 
 ok mult(1, 2,) is 2
 ok mult(1, 2, 3,) is 6
-ok mult(10,[1..6]...,) is 7200
+ok mult(10, [1 to 6]...,) is 7200
 
 
 # Test for inline functions with parentheses and implicit calls.

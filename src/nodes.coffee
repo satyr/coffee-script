@@ -63,7 +63,7 @@ exports.Base = class Base
     pair = unless @isComplex()
       [this, this]
     else
-      reference = new Literal o.scope.freeVariable 'ref'
+      reference = new Literal o.scope.freeVariable (options?.name) or 'ref'
       compiled  = new Assign reference, this
       [compiled, reference]
     (pair[i] = node.compile o) for node, i in pair if options?.precompile
@@ -212,7 +212,7 @@ exports.Expressions = class Expressions extends Base
       #{code}
     """ if o.scope.hasAssignments this
     code = """
-      #{@tab}var #{o.scope.compiledDeclarations()};
+      #{@tab}var #{ o.scope.compiledDeclarations() };
       #{code}
     """ if not o.globals and o.scope.hasDeclarations this
     code
@@ -319,9 +319,6 @@ exports.Value = class Value extends Base
 
   isObject: ->
     @base instanceof ObjectLiteral and not @properties.length
-
-  isSplice: ->
-    last(@properties) instanceof Slice
 
   isComplex: ->
     @base.isComplex() or @hasProperties()
@@ -600,93 +597,54 @@ exports.Index = class Index extends Base
 
 #### Range
 
-# A range literal. Ranges can be used to extract portions (slices) of arrays,
-# to specify a range for comprehensions, or as a value, to be expanded into the
-# corresponding array of integers at runtime.
+# A range literal. Ranges can be used to specify a range for comprehensions
+# or as a value to be expanded into the corresponding array of integers at runtime.
 exports.Range = class Range extends Base
 
-  children: ['from', 'to']
+  children: ['begin', 'end', 'step']
 
-  constructor: (@from, @to, tag) ->
-    super()
-    @exclusive = tag is 'exclusive'
-    @equals = if @exclusive then '' else '='
-
-  # Compiles the range's source variables -- where it starts and where it ends.
-  # But only if they need to be cached to avoid double evaluation.
-  compileVariables: (o) ->
-    o = merge(o, top: true)
-    [@from, @fromVar] =  @from.compileReference o, precompile: yes
-    [@to, @toVar] =      @to.compileReference o, precompile: yes
-    [@fromNum, @toNum] = [@fromVar.match(SIMPLENUM), @toVar.match(SIMPLENUM)]
-    parts = []
-    parts.push @from if @from isnt @fromVar
-    parts.push @to if @to isnt @toVar
+  constructor: (@begin, @end, @step) -> super()
 
   # When compiled normally, the range returns the contents of the *for loop*
   # needed to iterate over the values in the range. Used by comprehensions.
   compileNode: (o) ->
-    @compileVariables o
-    return    @compileArray(o)  unless o.index
-    return    @compileSimple(o) if @fromNum and @toNum
-    idx      = del o, 'index'
-    step     = del o, 'step'
-    vars     = "#{idx} = #{@from}" + if @to isnt @toVar then ", #{@to}" else ''
-    intro    = "(#{@fromVar} <= #{@toVar} ? #{idx}"
-    compare  = "#{intro} <#{@equals} #{@toVar} : #{idx} >#{@equals} #{@toVar})"
-    stepPart = if step then step.compile(o) else '1'
-    incr     = if step then "#{idx} += #{stepPart}" else "#{intro} += #{stepPart} : #{idx} -= #{stepPart})"
-    "#{vars}; #{compare}; #{incr}"
-
-  # Compile a simple range comprehension, with integers.
-  compileSimple: (o) ->
-    [from, to] = [+@fromNum, +@toNum]
-    idx        = del o, 'index'
-    step       = del o, 'step'
-    step       and= "#{idx} += #{step.compile(o)}"
-    if from <= to
-      "#{idx} = #{from}; #{idx} <#{@equals} #{to}; #{step or "#{idx}++"}"
+    return @compileArray o unless idx = o.index
+    o = merge o, top: on
+    [bgn, bvar] = @begin.compileReference o, precompile: on, name: 'from'
+    [end, evar] = @end  .compileReference o, precompile: on, name: 'to'
+    [stp, svar] = @step .compileReference o, precompile: on, name: 'step'
+    vars = "#{idx} = #{bgn}"
+    vars += ", #{end}" if end isnt evar
+    vars += ", #{stp}" if stp isnt svar
+    compare = if isNaN stp
+      "#{bvar} > #{evar} ? #{idx} >= #{evar} : #{idx} <= #{evar}"
     else
-      "#{idx} = #{from}; #{idx} >#{@equals} #{to}; #{step or "#{idx}--"}"
+      "#{idx} #{ if stp < 0 then '>=' else '<=' } #{evar}"
+    "#{vars}; #{compare}; #{idx} += #{svar}"
 
   # When used as a value, expand the range into the equivalent array.
   compileArray: (o) ->
-    if @fromNum and @toNum and Math.abs(@fromNum - @toNum) <= 20
-      range = [+@fromNum..+@toNum]
-      range.pop() if @exclusive
-      return "[#{ range.join(', ') }]"
-    idt    = @idt 1
-    i      = o.scope.freeVariable 'i'
-    result = o.scope.freeVariable 'result'
-    pre    = "\n#{idt}#{result} = [];"
-    if @fromNum and @toNum
-      o.index = i
-      body = @compileSimple o
-    else
-      vars = "#{i} = #{@from}" + if @to isnt @toVar then ", #{@to}" else ''
-      clause = "#{@fromVar} <= #{@toVar} ?"
-      body   = "var #{vars}; #{clause} #{i} <#{@equals} #{@toVar} : #{i} >#{@equals} #{@toVar}; #{clause} #{i} += 1 : #{i} -= 1"
-    post   = "{ #{result}.push(#{i}); }\n#{idt}return #{result};\n#{o.indent}"
-    "(function() {#{pre}\n#{idt}for (#{body})#{post}}).call(this)"
-
-#### Slice
-
-# An array slice literal. Unlike JavaScript's `Array#slice`, the second parameter
-# specifies the index of the end of the slice, just as the first parameter
-# is the index of the beginning.
-exports.Slice = class Slice extends Base
-
-  children: ['range']
-
-  constructor: (@range) ->
-    super()
-
-  compileNode: (o) ->
-    from  =  if @range.from then @range.from.compile(o) else '0'
-    to    =  if @range.to then @range.to.compile(o) else ''
-    to    += if not to or @range.exclusive then '' else ' + 1'
-    to    =  ', ' + to if to
-    ".slice(#{from}#{to})"
+    i    = @begin.compile o
+    end  = @end  .compile o
+    step = @step .compile o
+    unless isNaN(i) or isNaN(end) or isNaN(step) or (end - i) / step > 20
+      return "[#{ [+i to +end by +step].join ', ' }]"
+    idt = @idt 1
+    unless isNaN step
+      compare = if step < 0 then '>=' else '<='
+      return """
+        (function(i, end, result) {
+        #{idt}for (; i #{compare} end; i += #{step}) result.push(i);
+        #{idt}return result;
+        #{@tab}})(#{i}, #{end}, [])
+      """
+    """
+    (function(i, end, step, result) {
+    #{idt}if (step < 0) for (; i >= end; i += step) result.push(i);
+    #{idt}else          for (; i <= end; i += step) result.push(i);
+    #{idt}return result;
+    #{@tab}})(#{i}, #{end}, #{step}, [])
+    """
 
 #### ObjectLiteral
 
@@ -795,7 +753,7 @@ exports.Class = class Class extends Base
       constructor = new Code
 
     for prop in @properties
-      [pvar, func] = [prop.variable, prop.value]
+      {variable: pvar, value: func} = prop
       if pvar and pvar.base.value is 'constructor'
         if func not instanceof Code
           [func, ref] = func.compileReference o
@@ -852,14 +810,13 @@ exports.Assign = class Assign extends Base
   isValue: ->
     @variable instanceof Value
 
-  # Compile an assignment, delegating to `compilePatternMatch` or
-  # `compileSplice` if appropriate. Keep track of the name of the base object
+  # Compile an assignment, delegating to `compilePatternMatch` if appropriate.
+  # Keep track of the name of the base object
   # we've been assigned to, for correct internal references. If the variable
   # has not been seen yet within the current scope, declare it.
   compileNode: (o) ->
     if isValue = @isValue()
       return @compilePatternMatch(o) if @variable.isArray() or @variable.isObject()
-      return @compileSplice(o) if @variable.isSplice()
       return node.compile o if node = Value.unfoldSoak o, this, 'variable'
     top    = del o, 'top'
     stmt   = del o, 'asStatement'
@@ -923,18 +880,6 @@ exports.Assign = class Assign extends Base
     assigns.push valVar unless top
     code = assigns.join ', '
     if top or @parenthetical then code else "(#{code})"
-
-  # Compile the assignment from an array splice literal, using JavaScript's
-  # `Array#splice` method.
-  compileSplice: (o) ->
-    {range} = @variable.properties.pop()
-    name  = @variable.compile o
-    plus  = if range.exclusive then '' else ' + 1'
-    from  = if range.from then range.from.compile(o) else '0'
-    to    = if range.to then range.to.compile(o) + ' - ' + from + plus else "#{name}.length"
-    ref   = o.scope.freeVariable 'ref'
-    val   = @value.compile(o)
-    "([].splice.apply(#{name}, [#{from}, #{to}].concat(#{ref} = #{val})), #{ref})"
 
 #### Code
 
@@ -1169,16 +1114,21 @@ exports.Op = class Op extends Base
 
   children: ['first', 'second']
 
-  constructor: (@operator, @first, @second, flip) ->
+  constructor: (op, first, second, flip) ->
+    if first instanceof Value
+      if first.base instanceof ObjectLiteral
+        first = new Parens first
+      else if not second and op in ['+', '-'] and NUMBER.test(first.base.value)
+        return new Value new Literal op + first.base.value
+    else if op is 'new' and first instanceof Call
+      return first.newInstance()
     super()
-    @operator = @CONVERSIONS[@operator] or @operator
+    @operator = @CONVERSIONS[op] or op
+    @first    = first
+    @second   = second
     @flip     = !!flip
-    if @first instanceof Value and @first.base instanceof ObjectLiteral
-      @first = new Parens @first
-    else if @operator is 'new' and @first instanceof Call
-      return @first.newInstance()
-    @first.tags.operation = yes
-    @second.tags.operation = yes if @second
+    @first  .tags.operation = yes
+    @second?.tags.operation = yes
 
   isUnary: ->
     not @second
@@ -1410,11 +1360,10 @@ exports.For = class For extends Base
   # comprehensions. Some of the generated code can be shared in common, and
   # some cannot.
   compileNode: (o) ->
+    {scope}       = o
     topLevel      = del(o, 'top') and not @returns
-    range         = @source instanceof Value and @source.base instanceof Range and not @source.properties.length
-    source        = if range then @source.base else @source
     codeInBody    = @body.contains (node) -> node instanceof Code
-    scope         = o.scope
+    range         = @source instanceof Range
     name          = @name  and @name.compile o
     index         = @index and @index.compile o
     scope.find(name,  immediate: yes) if name and not @pattern and (range or not codeInBody)
@@ -1425,9 +1374,9 @@ exports.For = class For extends Base
     varPart       = ''
     guardPart     = ''
     body          = Expressions.wrap([@body])
-    idt1          = @idt 1
+    idt           = @idt 1
     if range
-      forPart = source.compile merge o, {index: ivar, @step}
+      forPart = @source.compile merge o, index: ivar
     else
       svar = sourcePart = @source.compile o
       if (name or not @raw) and
@@ -1441,8 +1390,13 @@ exports.For = class For extends Base
         "#{name} = #{svar}[#{ivar}]"
       unless @object
         lvar      = scope.freeVariable 'len'
-        stepPart  = if @step then "#{ivar} += #{ @step.compile(o) }" else "#{ivar}++"
-        forPart   = "#{ivar} = 0, #{lvar} = #{sourcePart}.length; #{ivar} < #{lvar}; #{stepPart}"
+        stepPart  = if @step
+          [step, stepVar] = @step.compileReference o, name: 'step', precompile: yes
+          "#{ivar} += #{stepVar}"
+        else "#{ivar}++"
+        vars      = "#{ivar} = 0, #{lvar} = #{sourcePart}.length"
+        vars     += ", #{step}" if step isnt stepVar
+        forPart   = "#{vars}; #{ivar} < #{lvar}; #{stepPart}"
     resultPart    = if rvar then "#{@tab}#{rvar} = [];\n" else ''
     returnResult  = @compileReturnValue(rvar, o)
     body          = Push.wrap(rvar, body) unless topLevel
@@ -1454,15 +1408,14 @@ exports.For = class For extends Base
       body.unshift  new Literal "var #{index} = #{ivar}" if index
       body        = Closure.wrap(body, true)
     else
-      varPart     = "#{idt1}#{namePart};\n" if namePart
+      varPart     = "#{idt}#{namePart};\n" if namePart
     if @object
       forPart     = "#{ivar} in #{sourcePart}"
-      guardPart   = "\n#{idt1}if (!#{utility('hasProp')}.call(#{svar}, #{ivar})) continue;" unless @raw
-    body          = body.compile merge o, indent: idt1, top: true
-    vars          = if range then name else "#{name}, #{ivar}"
+      guardPart   = "#{idt}if (!#{utility 'hasProp'}.call(#{svar}, #{ivar})) continue;\n" unless @raw
+    body          = body.compile merge o, indent: idt, top: true
     """
-    #{resultPart}#{@tab}for (#{forPart}) {#{guardPart}
-    #{varPart}#{body}
+    #{resultPart}#{@tab}for (#{forPart}) {
+    #{guardPart}#{varPart}#{body}
     #{@tab}}#{returnResult}
     """
 
@@ -1673,7 +1626,6 @@ TRAILING_WHITESPACE = /[ \t]+$/gm
 
 IDENTIFIER = /^[$A-Za-z_][$\w]*$/
 NUMBER     = /^0x[\da-f]+|^(?:\d+(\.\d+)?|\.\d+)(?:e[+-]?\d+)?$/i
-SIMPLENUM  = /^-?\d+$/
 
 # Is a literal value a string?
 IS_STRING = /^['"]/

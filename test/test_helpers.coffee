@@ -1,6 +1,6 @@
 {indexOf, include, starts, ends, compact, count, merge, extend, flatten, del, last} = require '../lib/helpers'
 
-array  = [0..4]
+array  = [0 to 4]
 string = array.join ''
 object = {}
 
