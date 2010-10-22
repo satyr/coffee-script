@@ -157,7 +157,7 @@ exports.Base = class Base
 # `if`, `switch`, or `try`, and so on...
 exports.Expressions = class Expressions extends Base
 
-  children: ['expressions']
+  children: <[ expressions ]>
 
   isStatement:  YES
 
@@ -253,7 +253,7 @@ exports.Literal = class Literal extends Base
   # Break and continue must be treated as pure statements -- they lose their
   # meaning when wrapped in a closure.
   isStatement: ->
-    @value in ['break', 'continue', 'debugger']
+    @value in <[ break continue debugger ]>
   isPureStatement: Literal::isStatement
 
   isComplex: NO
@@ -277,7 +277,7 @@ exports.Literal = class Literal extends Base
 # make sense.
 exports.Return = class Return extends Base
 
-  children: ['expression']
+  children: <[ expressions ]>
 
   isStatement    : YES
   isPureStatement: YES
@@ -305,7 +305,7 @@ exports.Return = class Return extends Base
 # or vanilla.
 exports.Value = class Value extends Base
 
-  children: ['base', 'properties']
+  children: <[ base properties ]>
 
   # A **Value** has a base and a list of property accesses.
   constructor: (@base, props, tag) ->
@@ -435,7 +435,7 @@ exports.Comment = class Comment extends Base
 # calls against the prototype's function of the same name.
 exports.Call = class Call extends Base
 
-  children: ['variable', 'args']
+  children: <[ variable args ]>
 
   constructor: (variable, @args, @soakNode) ->
     super()
@@ -547,7 +547,7 @@ exports.Call = class Call extends Base
 # [Closure Library](http://closure-library.googlecode.com/svn/docs/closureGoogBase.js.html).
 exports.Extends = class Extends extends Base
 
-  children: ['child', 'parent']
+  children: <[ child parent ]>
 
   constructor: (@child, @parent) ->
     super()
@@ -562,7 +562,7 @@ exports.Extends = class Extends extends Base
 # an accessor into the object's prototype.
 exports.Accessor = class Accessor extends Base
 
-  children: ['name']
+  children: <[ name ]>
 
   constructor: (@name, tag) ->
     super()
@@ -580,7 +580,7 @@ exports.Accessor = class Accessor extends Base
 # A `[ ... ]` indexed accessor into an array or object.
 exports.Index = class Index extends Base
 
-  children: ['index']
+  children: <[ index ]>
 
   constructor: (@index) ->
     super()
@@ -597,7 +597,7 @@ exports.Index = class Index extends Base
 # corresponding array of integers at runtime.
 exports.Range = class Range extends Base
 
-  children: ['from', 'to']
+  children: <[ from to ]>
 
   constructor: (@from, @to, tag) ->
     super()
@@ -668,7 +668,7 @@ exports.Range = class Range extends Base
 # is the index of the beginning.
 exports.Slice = class Slice extends Base
 
-  children: ['range']
+  children: <[ range ]>
 
   constructor: (@range) ->
     super()
@@ -685,7 +685,7 @@ exports.Slice = class Slice extends Base
 # An object literal, nothing fancy.
 exports.ObjectLiteral = class ObjectLiteral extends Base
 
-  children: ['properties']
+  children: <[ properties ]>
 
   constructor: (props) ->
     super()
@@ -722,7 +722,7 @@ exports.ObjectLiteral = class ObjectLiteral extends Base
 # An array literal.
 exports.ArrayLiteral = class ArrayLiteral extends Base
 
-  children: ['objects']
+  children: <[ objects ]>
 
   constructor: (objs) ->
     super()
@@ -760,7 +760,7 @@ exports.ArrayLiteral = class ArrayLiteral extends Base
 # The CoffeeScript class definition.
 exports.Class = class Class extends Base
 
-  children: ['variable', 'parent', 'properties']
+  children: <[ variable parent properties ]>
 
   isStatement:  YES
 
@@ -847,9 +847,9 @@ exports.Assign = class Assign extends Base
   # Matchers for detecting class/method names
   METHOD_DEF: /^(?:(\S+)\.prototype\.)?([$A-Za-z_][$\w]*)$/
 
-  CONDITIONAL: ['||=', '&&=', '?=']
+  CONDITIONAL: <[ ||= &&= ?= ]>
 
-  children: ['variable', 'value']
+  children: <[ variable value ]>
 
   topSensitive: YES
 
@@ -962,7 +962,7 @@ exports.Assign = class Assign extends Base
 # has no *children* -- they're within the inner scope.
 exports.Code = class Code extends Base
 
-  children: ['params', 'body']
+  children: <[ params body ]>
 
   constructor: (@params, @body, tag) ->
     super()
@@ -1031,7 +1031,7 @@ exports.Code = class Code extends Base
 # as well as be a splat, gathering up a group of parameters into an array.
 exports.Param = class Param extends Base
 
-  children: ['name']
+  children: <[ name ]>
 
   constructor: (@name, @attach, @splat) ->
     super()
@@ -1052,7 +1052,7 @@ exports.Param = class Param extends Base
 # or as part of a destructuring assignment.
 exports.Splat = class Splat extends Base
 
-  children: ['name']
+  children: <[ name ]>
 
   constructor: (name) ->
     super()
@@ -1116,7 +1116,7 @@ exports.Splat = class Splat extends Base
 # flexibility or more speed than a comprehension can provide.
 exports.While = class While extends Base
 
-  children: ['condition', 'guard', 'body']
+  children: <[ condition guard body ]>
 
   topSensitive: YES
   isStatement : YES
@@ -1174,15 +1174,15 @@ exports.Op = class Op extends Base
 
   # The list of operators for which we perform
   # [Python-style comparison chaining](http://docs.python.org/reference/expressions.html#notin).
-  CHAINABLE:        ['<', '>', '>=', '<=', '===', '!==']
+  CHAINABLE:        <[ < > >= <= === !== ]>
 
   # Operators must come before their operands with a space.
-  PREFIX_OPERATORS: ['new', 'typeof', 'delete']
+  PREFIX_OPERATORS: <[ new typeof delete ]>
 
   # Operators that modify a reference.
-  MUTATORS: ['++', '--', 'delete']
+  MUTATORS: <[ ++ -- delete ]>
 
-  children: ['first', 'second']
+  children: <[ first second ]>
 
   constructor: (op, first, second, flip) ->
     return new In first, second if op is 'in'
@@ -1253,7 +1253,7 @@ exports.Op = class Op extends Base
 #### In
 exports.In = class In extends Base
 
-  children: ['object', 'array']
+  children: <[ object array ]>
 
   constructor: (@object, @array) ->
     super()
@@ -1290,7 +1290,7 @@ exports.In = class In extends Base
 # A classic *try/catch/finally* block.
 exports.Try = class Try extends Base
 
-  children: ['attempt', 'recovery', 'ensure']
+  children: <[ attempt recovery ensure ]>
 
   isStatement: YES
 
@@ -1320,7 +1320,7 @@ exports.Try = class Try extends Base
 # Simple node to throw an exception.
 exports.Throw = class Throw extends Base
 
-  children: ['expression']
+  children: <[ expression ]>
 
   isStatement: YES
 
@@ -1340,7 +1340,7 @@ exports.Throw = class Throw extends Base
 # table.
 exports.Existence = class Existence extends Base
 
-  children: ['expression']
+  children: <[ expression ]>
 
   constructor: (@expression) ->
     super()
@@ -1362,7 +1362,7 @@ exports.Existence = class Existence extends Base
 # Parentheses are a good way to force any statement to become an expression.
 exports.Parens = class Parens extends Base
 
-  children: ['expression']
+  children: <[ expression ]>
 
   topSensitive: YES
 
@@ -1399,7 +1399,7 @@ exports.Parens = class Parens extends Base
 # you can map and filter in a single pass.
 exports.For = class For extends Base
 
-  children: ['body', 'source', 'guard']
+  children: <[ body source guard ]>
 
   topSensitive: YES
   isStatement : YES
@@ -1502,7 +1502,7 @@ exports.For = class For extends Base
 # A JavaScript *switch* statement. Converts into a returnable expression on-demand.
 exports.Switch = class Switch extends Base
 
-  children: ['subject', 'cases', 'otherwise']
+  children: <[ subject cases otherwise ]>
 
   isStatement: YES
 
@@ -1539,7 +1539,7 @@ exports.Switch = class Switch extends Base
 # because ternaries are already proper expressions, and don't need conversion.
 exports.If = class If extends Base
 
-  children: ['condition', 'body', 'elseBody']
+  children: <[ condition body elseBody ]>
 
   topSensitive: YES
 

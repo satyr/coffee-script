@@ -565,23 +565,23 @@ grammar =
 #
 #     (2 + 3) * 4
 operators = [
-  ["left",      'CALL_START', 'CALL_END']
-  ["nonassoc",  '++', '--']
-  ["left",      '?']
-  ["right",     'UNARY']
-  ["left",      'MATH']
-  ["left",      '+', '-']
-  ["left",      'SHIFT']
-  ["left",      'COMPARE']
-  ["left",      'RELATION']
-  ["left",      '==', '!=']
-  ["left",      'LOGIC']
-  ["left",      '.']
-  ["nonassoc",  'INDENT', 'OUTDENT']
-  ["right",     'WHEN', 'LEADING_WHEN', 'FORIN', 'FOROF', 'BY', 'THROW']
-  ["right",     'IF', 'UNLESS', 'ELSE', 'FOR', 'WHILE', 'UNTIL', 'LOOP', 'SUPER', 'CLASS', 'EXTENDS']
-  ["right",     '=', ':', 'COMPOUND_ASSIGN', 'RETURN']
-  ["right",     '->', '=>', 'UNLESS', 'POST_IF', 'POST_UNLESS']
+  <[  left      CALL_START CALL_END                                      ]>
+  <[  nonassoc  ++ --                                                    ]>
+  <[  left      ?                                                        ]>
+  <[  right     UNARY                                                    ]>
+  <[  left      MATH                                                     ]>
+  <[  left      + -                                                      ]>
+  <[  left      SHIFT                                                    ]>
+  <[  left      COMPARE                                                  ]>
+  <[  left      RELATION                                                 ]>
+  <[  left      == !=                                                    ]>
+  <[  left      LOGIC                                                    ]>
+  <[  left      .                                                        ]>
+  <[  nonassoc  INDENT OUTDENT                                           ]>
+  <[  right     WHEN LEADING_WHEN FORIN FOROF BY THROW                   ]>
+  <[  right     IF UNLESS ELSE FOR WHILE UNTIL LOOP SUPER CLASS EXTENDS  ]>
+  <[  right     = : COMPOUND_ASSIGN RETURN                               ]>
+  <[  right     -> => UNLESS POST_IF POST_UNLESS                         ]>
 ]
 
 # Wrapping Up
