@@ -51,3 +51,7 @@ ok list.join(' ') is '8 6 4 2'
 
 #759: `if` within `while` condition
 2 while if 1 then 0
+
+i = 0
+do while ++i < 3
+eq i, 3

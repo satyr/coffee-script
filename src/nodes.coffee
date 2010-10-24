@@ -228,7 +228,7 @@ exports.Expressions = class Expressions extends Base
   # return the result, and it's an expression, simply return it. If it's a
   # statement, ask the statement to do so.
   compileExpression: (node, o) ->
-    while node isnt node = node.unwrap() then
+    do until node is node = node.unwrap()
     node = node.unfoldSoak(o) or node
     node.tags.front = on
     o.level = LEVEL_TOP
@@ -1000,18 +1000,16 @@ exports.While = class While extends Base
   # return an array containing the computed result of each iteration.
   compileNode: (o) ->
     o.indent = @idt 1
-    set      = ''
-    {body}   = this
-    if o.level > LEVEL_TOP or @returns
-      rvar = o.scope.freeVariable 'result'
-      set  = "#{@tab}#{rvar} = [];\n"
-      body = Push.wrap rvar, body if body
-    body = Expressions.wrap [new If @guard, body] if @guard
-    code = set + @tab + """
-      while (#{ @condition.compile o, LEVEL_PAREN }) {
-      #{ body.compile o, LEVEL_TOP }
-      #{@tab}}
-    """
+    code     = @tab
+    cond     = @condition.compile o, LEVEL_PAREN
+    if body  = @body or ''
+      if o.level > LEVEL_TOP or @returns
+        rvar  = o.scope.freeVariable 'result'
+        code += rvar + ' = [];\n' + @tab
+        body  = Push.wrap rvar, body if body
+      body = Expressions.wrap [new If @guard, body] if @guard
+      body = "\n#{ body.compile o, LEVEL_TOP }\n" + @tab
+    code += "while (#{cond}) {#{body}}"
     if @returns
       o.indent = @tab
       code += '\n' + new Return(new Literal rvar).compile o

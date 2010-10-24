@@ -404,10 +404,11 @@ grammar =
   # The while loop can either be normal, with a block of expressions to execute,
   # or postfix, with a single expression. There is no do..while.
   While: [
-    o "WhileSource Block",                      -> $1.addBody $2
-    o "Statement WhileSource",                  -> $2.addBody Expressions.wrap [$1]
-    o "Expression WhileSource",                 -> $2.addBody Expressions.wrap [$1]
-    o "Loop",                                   -> $1
+    o 'WhileSource Block',                      -> $1.addBody $2
+    o 'DO         WhileSource',                 -> $2
+    o 'Statement  WhileSource',                 -> $2.addBody Expressions.wrap [$1]
+    o 'Expression WhileSource',                 -> $2.addBody Expressions.wrap [$1]
+    o 'Loop',                                   -> $1
   ]
 
   Loop: [
